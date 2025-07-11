@@ -39,7 +39,7 @@ const navigation = [
 ];
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -116,11 +116,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {profile?.full_name || user?.email}
+                  {user?.email}
                 </p>
                 <div className="flex items-center space-x-2">
                   <Badge variant="secondary" className="text-xs">
-                    {profile?.plan_type || 'Free'}
+                    Free
                   </Badge>
                 </div>
               </div>
@@ -160,7 +160,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                       <User className="h-3 w-3" />
                     </div>
                     <span className="hidden sm:block text-sm">
-                      {profile?.full_name || user?.email}
+                      {user?.email}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
