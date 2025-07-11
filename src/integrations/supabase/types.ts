@@ -493,7 +493,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_campaign_performance: {
+        Args: { p_user_id: string; p_days_back?: number }
+        Returns: {
+          campaign_id: string
+          campaign_name: string
+          total_spend: number
+          total_conversions: number
+          total_clicks: number
+          total_impressions: number
+          avg_cpa: number
+          avg_ctr: number
+          avg_roas: number
+          trend_direction: string
+          performance_score: number
+        }[]
+      }
+      trigger_automation_processing: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
