@@ -7,6 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Dashboard } from "@/pages/Dashboard";
+import { Accounts } from "@/pages/Accounts";
+import { Automation } from "@/pages/Automation";
+import { Reports } from "@/pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,9 +25,9 @@ const App = () => (
             <DashboardLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/automation" element={<div>Automation Rules - Coming Soon</div>} />
-                <Route path="/reports" element={<div>Reports - Coming Soon</div>} />
-                <Route path="/accounts" element={<div>Ad Accounts - Coming Soon</div>} />
+                <Route path="/automation" element={<Automation />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/accounts" element={<Accounts />} />
                 <Route path="/settings" element={<div>Settings - Coming Soon</div>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

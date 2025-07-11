@@ -11,7 +11,7 @@ interface AutomatedAction {
   target_name: string;
   reason: string;
   executed_at: string;
-  status: 'pending' | 'executed' | 'failed';
+  status: 'pending' | 'success' | 'failed';
   metrics?: {
     cpa?: number;
     ctr?: number;
@@ -33,13 +33,13 @@ const actionIcons = {
 
 const statusColors = {
   pending: 'text-warning',
-  executed: 'text-success',
+  success: 'text-success',
   failed: 'text-danger',
 };
 
 const statusIcons = {
   pending: Clock,
-  executed: CheckCircle,
+  success: CheckCircle,
   failed: AlertTriangle,
 };
 
@@ -92,7 +92,7 @@ export const AutomatedActions: React.FC<AutomatedActionsProps> = ({
                       <div className="flex items-center space-x-2">
                         <StatusIcon className={cn("h-3 w-3", statusColors[action.status])} />
                         <Badge 
-                          variant={action.status === 'executed' ? 'default' : 'secondary'}
+                          variant={action.status === 'success' ? 'default' : 'secondary'}
                           className="text-xs"
                         >
                           {action.status}

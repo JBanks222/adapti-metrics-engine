@@ -3,57 +3,100 @@ import { MetricsCard } from '@/components/dashboard/MetricsCard';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { CampaignComparison } from '@/components/dashboard/CampaignComparison';
 import { AutomatedActions } from '@/components/dashboard/AutomatedActions';
+import { AdAccountStatus } from '@/components/dashboard/AdAccountStatus';
 import { Eye, MousePointer, DollarSign, Target, TrendingUp } from 'lucide-react';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useAdPlatforms } from '@/hooks/useAdPlatforms';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Mock data for demo
-const mockMetrics = [
-  { title: 'Total Impressions', value: '2.4M', change: { value: 12, period: 'vs last week' }, icon: <Eye className="h-4 w-4" /> },
-  { title: 'Total Clicks', value: '48.2K', change: { value: 8, period: 'vs last week' }, icon: <MousePointer className="h-4 w-4" /> },
-  { title: 'Total Spend', value: '$12,430', change: { value: -5, period: 'vs last week' }, icon: <DollarSign className="h-4 w-4" /> },
-  { title: 'Avg CPA', value: '$25.80', change: { value: -12, period: 'vs last week' }, icon: <Target className="h-4 w-4" /> },
-  { title: 'Avg ROAS', value: '3.2x', change: { value: 15, period: 'vs last week' }, icon: <TrendingUp className="h-4 w-4" /> },
-];
-
-const mockChartData = Array.from({ length: 7 }, (_, i) => ({
-  date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString(),
-  ctr: 2.1 + Math.random() * 0.8,
-  cpa: 20 + Math.random() * 10,
-  roas: 2.8 + Math.random() * 1.2,
-}));
-
-const mockCampaignData = [
-  { name: 'Campaign A', spend: 2500, conversions: 45, roas: 3.2 },
-  { name: 'Campaign B', spend: 1800, conversions: 32, roas: 2.8 },
-  { name: 'Campaign C', spend: 3200, conversions: 58, roas: 3.8 },
-];
-
-const mockActions = [
-  {
-    id: '1',
-    type: 'pause' as const,
-    target_name: 'Summer Sale Campaign',
-    reason: 'CPA exceeded $30 threshold',
-    executed_at: new Date().toISOString(),
-    status: 'executed' as const,
-    metrics: { cpa: 32.5, ctr: 1.2, roas: 2.1 }
-  },
-  {
-    id: '2',
-    type: 'budget_increase' as const,
-    target_name: 'Black Friday Promo',
-    reason: 'ROAS increased 20% - scaling budget',
-    executed_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    status: 'executed' as const,
-    metrics: { roas: 4.2, ctr: 3.1 }
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  } else if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
   }
-];
+  return num.toString();
+};
+
+const formatCurrency = (num: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
 export const Dashboard: React.FC = () => {
+  const { metrics, performanceData, campaignData, actions, loading } = useDashboardData();
+  const { accounts } = useAdPlatforms();
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Loading Metrics */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+
+        {/* Loading Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
+        </div>
+
+        {/* Loading Actions */}
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  // Check if user has connected ad accounts
+  const hasConnectedAccounts = accounts.length > 0 && accounts.some(acc => acc.is_active);
+
+  const dashboardMetrics = metrics ? [
+    { 
+      title: 'Total Impressions', 
+      value: formatNumber(metrics.totalImpressions), 
+      change: { value: Math.round(metrics.impressionsChange), period: 'vs last week' }, 
+      icon: <Eye className="h-4 w-4" /> 
+    },
+    { 
+      title: 'Total Clicks', 
+      value: formatNumber(metrics.totalClicks), 
+      change: { value: Math.round(metrics.clicksChange), period: 'vs last week' }, 
+      icon: <MousePointer className="h-4 w-4" /> 
+    },
+    { 
+      title: 'Total Spend', 
+      value: formatCurrency(metrics.totalSpend), 
+      change: { value: Math.round(metrics.spendChange), period: 'vs last week' }, 
+      icon: <DollarSign className="h-4 w-4" /> 
+    },
+    { 
+      title: 'Avg CPA', 
+      value: formatCurrency(metrics.avgCPA), 
+      change: { value: Math.round(metrics.cpaChange), period: 'vs last week' }, 
+      icon: <Target className="h-4 w-4" /> 
+    },
+    { 
+      title: 'Avg ROAS', 
+      value: `${metrics.avgROAS.toFixed(1)}x`, 
+      change: { value: Math.round(metrics.roasChange), period: 'vs last week' }, 
+      icon: <TrendingUp className="h-4 w-4" /> 
+    },
+  ] : [];
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Ad Account Status */}
+      {!hasConnectedAccounts && <AdAccountStatus />}
+
       {/* Metrics Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {mockMetrics.map((metric, index) => (
+        {dashboardMetrics.map((metric, index) => (
           <MetricsCard
             key={metric.title}
             title={metric.title}
@@ -69,13 +112,13 @@ export const Dashboard: React.FC = () => {
       <div className="grid gap-6 lg:grid-cols-2">
         <PerformanceChart
           title="Performance Trends (Last 7 Days)"
-          data={mockChartData}
+          data={performanceData}
         />
-        <CampaignComparison data={mockCampaignData} />
+        <CampaignComparison data={campaignData} />
       </div>
 
       {/* Automated Actions */}
-      <AutomatedActions actions={mockActions} />
+      <AutomatedActions actions={actions} />
     </div>
   );
 };

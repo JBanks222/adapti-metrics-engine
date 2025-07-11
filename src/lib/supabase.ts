@@ -47,7 +47,7 @@ export const getCampaignsWithMetrics = async () => {
         )
       )
     `)
-    .eq('ad_accounts.is_connected', true);
+    .eq('ad_accounts.is_active', true);
     
   if (error) throw error;
   return data;
