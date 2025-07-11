@@ -1,48 +1,32 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Settings, Play, Pause, Edit } from 'lucide-react';
-
-const mockRules = [
-  {
-    id: '1',
-    name: 'High CPA Pause Rule',
-    description: 'Pause campaigns when CPA exceeds $30',
-    isActive: true,
-    lastTriggered: '2024-01-15 14:30:00',
-    conditions: { metric: 'CPA', operator: '>', value: 30 },
-    actions: { type: 'pause' },
-  },
-  {
-    id: '2',
-    name: 'Scale High ROAS',
-    description: 'Increase budget by 20% when ROAS > 4.0',
-    isActive: true,
-    lastTriggered: '2024-01-14 09:15:00',
-    conditions: { metric: 'ROAS', operator: '>', value: 4.0 },
-    actions: { type: 'budget_increase', value: 20 },
-  },
-  {
-    id: '3',
-    name: 'Low CTR Alert',
-    description: 'Send alert when CTR drops below 1.5%',
-    isActive: false,
-    lastTriggered: null,
-    conditions: { metric: 'CTR', operator: '<', value: 1.5 },
-    actions: { type: 'alert' },
-  },
-];
+import { RuleBuilder } from '@/components/automation/RuleBuilder';
+import { useAutomationRules } from '@/hooks/useAutomationRules';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Plus, Settings, Play, Pause, Edit, Trash2 } from 'lucide-react';
 
 export const Automation: React.FC = () => {
-  const [rules, setRules] = useState(mockRules);
+  const { rules, loading, toggleRule, deleteRule, refetch } = useAutomationRules();
 
-  const toggleRule = (ruleId: string) => {
-    setRules(prev => prev.map(rule => 
-      rule.id === ruleId ? { ...rule, isActive: !rule.isActive } : rule
-    ));
-  };
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -54,10 +38,7 @@ export const Automation: React.FC = () => {
           </p>
         </div>
         
-        <Button className="flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>Create Rule</span>
-        </Button>
+        <RuleBuilder onRuleCreated={refetch} />
       </div>
 
       {/* Rules Overview */}
@@ -67,7 +48,7 @@ export const Automation: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Play className="h-5 w-5 text-success" />
               <div>
-                <p className="text-2xl font-bold">{rules.filter(r => r.isActive).length}</p>
+                <p className="text-2xl font-bold">{rules.filter(r => r.is_active).length}</p>
                 <p className="text-sm text-muted-foreground">Active Rules</p>
               </div>
             </div>
@@ -79,7 +60,7 @@ export const Automation: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Pause className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-2xl font-bold">{rules.filter(r => !r.isActive).length}</p>
+                <p className="text-2xl font-bold">{rules.filter(r => !r.is_active).length}</p>
                 <p className="text-sm text-muted-foreground">Inactive Rules</p>
               </div>
             </div>
@@ -91,7 +72,7 @@ export const Automation: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Settings className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-2xl font-bold">{rules.filter(r => r.lastTriggered).length}</p>
+                <p className="text-2xl font-bold">{rules.filter(r => r.last_triggered_at).length}</p>
                 <p className="text-sm text-muted-foreground">Recently Triggered</p>
               </div>
             </div>
@@ -117,20 +98,22 @@ export const Automation: React.FC = () => {
                 <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="font-medium">{rule.name}</h3>
-                      <Badge variant={rule.isActive ? "default" : "secondary"}>
-                        {rule.isActive ? 'Active' : 'Inactive'}
+                      <h3 className="font-medium">{rule.rule_name}</h3>
+                      <Badge variant={rule.is_active ? "default" : "secondary"}>
+                        {rule.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {rule.description}
+                      {rule.rule_description || 'No description provided'}
                     </p>
                     <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Condition:</span> {rule.conditions.metric} {rule.conditions.operator} {rule.conditions.value}
-                      {rule.lastTriggered && (
+                      <span className="font-medium">Conditions:</span> {rule.conditions.length} condition(s)
+                      <span className="mx-2">•</span>
+                      <span className="font-medium">Actions:</span> {rule.actions.length} action(s)
+                      {rule.last_triggered_at && (
                         <>
                           <span className="mx-2">•</span>
-                          <span>Last triggered: {new Date(rule.lastTriggered).toLocaleString()}</span>
+                          <span>Last triggered: {new Date(rule.last_triggered_at).toLocaleString()}</span>
                         </>
                       )}
                     </div>
@@ -138,12 +121,20 @@ export const Automation: React.FC = () => {
                   
                   <div className="flex items-center space-x-3">
                     <Switch
-                      checked={rule.isActive}
-                      onCheckedChange={() => toggleRule(rule.id)}
+                      checked={rule.is_active}
+                      onCheckedChange={(checked) => toggleRule(rule.id, checked)}
                     />
                     <Button size="sm" variant="outline">
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => deleteRule(rule.id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>
