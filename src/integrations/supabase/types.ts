@@ -21,10 +21,13 @@ export type Database = {
           error_message: string | null
           executed_at: string | null
           id: string
+          ip_address: unknown | null
           rule_id: string | null
+          session_id: string | null
           status: string | null
           target_id: string
           target_type: string
+          user_agent: string | null
           user_id: string
         }
         Insert: {
@@ -33,10 +36,13 @@ export type Database = {
           error_message?: string | null
           executed_at?: string | null
           id?: string
+          ip_address?: unknown | null
           rule_id?: string | null
+          session_id?: string | null
           status?: string | null
           target_id: string
           target_type: string
+          user_agent?: string | null
           user_id: string
         }
         Update: {
@@ -45,10 +51,13 @@ export type Database = {
           error_message?: string | null
           executed_at?: string | null
           id?: string
+          ip_address?: unknown | null
           rule_id?: string | null
+          session_id?: string | null
           status?: string | null
           target_id?: string
           target_type?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: [
@@ -64,6 +73,7 @@ export type Database = {
       ad_accounts: {
         Row: {
           access_token: string | null
+          access_token_encrypted: string | null
           account_id: string
           account_name: string
           created_at: string
@@ -72,12 +82,14 @@ export type Database = {
           last_sync_at: string | null
           platform_id: string
           refresh_token: string | null
+          refresh_token_encrypted: string | null
           token_expires_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           access_token?: string | null
+          access_token_encrypted?: string | null
           account_id: string
           account_name: string
           created_at?: string
@@ -86,12 +98,14 @@ export type Database = {
           last_sync_at?: string | null
           platform_id: string
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           access_token?: string | null
+          access_token_encrypted?: string | null
           account_id?: string
           account_name?: string
           created_at?: string
@@ -100,6 +114,7 @@ export type Database = {
           last_sync_at?: string | null
           platform_id?: string
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string
@@ -416,6 +431,33 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempts: number | null
+          created_at: string | null
+          id: string
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          action_type: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string
@@ -509,9 +551,30 @@ export type Database = {
           performance_score: number
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          action_type_param: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          event_type: string
+          event_details?: Json
+          ip_addr?: unknown
+          user_agent_str?: string
+        }
+        Returns: undefined
+      }
       trigger_automation_processing: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_account_input: {
+        Args: { account_id_param: string; account_name_param: string }
+        Returns: boolean
       }
     }
     Enums: {

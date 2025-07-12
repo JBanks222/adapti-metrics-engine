@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { validateAutomationRule, logSecurityEvent } from '@/lib/security';
 
 export interface RuleCondition {
   metric: 'cpa' | 'roas' | 'ctr' | 'spend' | 'conversions';
@@ -75,6 +76,18 @@ export const useAutomationRules = () => {
     actions: RuleAction[];
   }) => {
     try {
+      // Validate input with security checks
+      const validation = await validateAutomationRule(ruleData);
+
+      if (!validation.valid) {
+        toast({
+          title: "Validation failed",
+          description: validation.error,
+          variant: "destructive",
+        });
+        throw new Error(validation.error);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -91,6 +104,13 @@ export const useAutomationRules = () => {
         .single();
 
       if (error) throw error;
+
+      // Log successful rule creation
+      await logSecurityEvent('automation_rule_created', {
+        rule_name: ruleData.rule_name,
+        conditions_count: ruleData.conditions.length,
+        actions_count: ruleData.actions.length,
+      });
 
       const newRule: AutomationRule = {
         id: data.id,
@@ -112,11 +132,18 @@ export const useAutomationRules = () => {
       });
 
       return newRule;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating automation rule:', error);
+      
+      // Log failed rule creation
+      await logSecurityEvent('automation_rule_creation_failed', {
+        rule_name: ruleData.rule_name,
+        error_message: error.message,
+      });
+
       toast({
         title: "Creation Failed",
-        description: "Failed to create automation rule. Please try again.",
+        description: error.message || "Failed to create automation rule. Please try again.",
         variant: "destructive",
       });
       throw error;

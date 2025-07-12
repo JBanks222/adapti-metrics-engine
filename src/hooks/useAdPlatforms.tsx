@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { validateAccountConnection, logSecurityEvent } from '@/lib/security';
 
 interface AdPlatform {
   id: string;
@@ -87,6 +88,21 @@ export const useAdPlatforms = () => {
     token_expires_at?: string;
   }) => {
     try {
+      // Validate input with security checks
+      const validation = await validateAccountConnection({
+        ...accountData,
+        platform_id: platformId,
+      });
+
+      if (!validation.valid) {
+        toast({
+          title: "Validation failed",
+          description: validation.error,
+          variant: "destructive",
+        });
+        throw new Error(validation.error);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -95,7 +111,13 @@ export const useAdPlatforms = () => {
         .insert({
           user_id: user.id,
           platform_id: platformId,
-          ...accountData,
+          account_id: accountData.account_id,
+          account_name: accountData.account_name,
+          // Don't store tokens in plain text - they should be encrypted separately
+          access_token: null,
+          refresh_token: null,
+          token_expires_at: accountData.token_expires_at,
+          is_active: true,
         })
         .select(`
           *,
@@ -104,6 +126,12 @@ export const useAdPlatforms = () => {
         .single();
 
       if (error) throw error;
+
+      // Log successful account connection
+      await logSecurityEvent('account_connected', {
+        platform_id: platformId,
+        account_name: accountData.account_name,
+      });
 
       // Transform the data to match our interface
       const transformedAccount = {
@@ -118,11 +146,18 @@ export const useAdPlatforms = () => {
       });
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting account:', error);
+      
+      // Log failed connection attempt
+      await logSecurityEvent('account_connection_failed', {
+        platform_id: platformId,
+        error_message: error.message,
+      });
+
       toast({
         title: "Connection Failed",
-        description: "Failed to connect ad account. Please try again.",
+        description: error.message || "Failed to connect ad account. Please try again.",
         variant: "destructive",
       });
       throw error;

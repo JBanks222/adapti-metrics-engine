@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.5";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,12 +27,9 @@ interface AutomationRule {
   is_active: boolean;
 }
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Initialize Supabase client inside the function for better security
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-const evaluateCondition = async (condition: RuleCondition, userId: string): Promise<boolean> => {
+const evaluateCondition = async (condition: RuleCondition, userId: string, supabase: any): Promise<boolean> => {
   const timeframeDays = {
     last_day: 1,
     last_3_days: 3,
@@ -99,7 +95,7 @@ const evaluateCondition = async (condition: RuleCondition, userId: string): Prom
   }
 };
 
-const executeAction = async (action: RuleAction, rule: AutomationRule): Promise<void> => {
+const executeAction = async (action: RuleAction, rule: AutomationRule, supabase: any): Promise<void> => {
   console.log(`Executing action ${action.type} for rule ${rule.rule_name}`);
 
   // Log the action
@@ -130,7 +126,7 @@ const executeAction = async (action: RuleAction, rule: AutomationRule): Promise<
   console.log(`Action executed: ${action.type} on ${action.target} for rule ${rule.rule_name}`);
 };
 
-const processRule = async (rule: AutomationRule): Promise<void> => {
+const processRule = async (rule: AutomationRule, supabase: any): Promise<void> => {
   console.log(`Processing rule: ${rule.rule_name}`);
 
   if (!rule.is_active) {
@@ -140,7 +136,7 @@ const processRule = async (rule: AutomationRule): Promise<void> => {
 
   // Check if all conditions are met
   const conditionResults = await Promise.all(
-    rule.conditions.map(condition => evaluateCondition(condition, rule.user_id))
+    rule.conditions.map(condition => evaluateCondition(condition, rule.user_id, supabase))
   );
 
   const allConditionsMet = conditionResults.every(result => result);
@@ -150,19 +146,34 @@ const processRule = async (rule: AutomationRule): Promise<void> => {
     
     // Execute all actions
     await Promise.all(
-      rule.actions.map(action => executeAction(action, rule))
+      rule.actions.map(action => executeAction(action, rule, supabase))
     );
   } else {
     console.log(`Conditions not met for rule ${rule.rule_name}`);
   }
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Initialize Supabase client with service role key for full access
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase configuration');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
     console.log('Starting automation rule processing...');
 
     // Get all active automation rules
@@ -194,7 +205,7 @@ serve(async (req) => {
         conditions: Array.isArray(rule.conditions) ? rule.conditions : [rule.conditions],
         actions: Array.isArray(rule.actions) ? rule.actions : [rule.actions],
         is_active: rule.is_active,
-      }))
+      }, supabase))
     );
 
     const successful = processedRules.filter(result => result.status === 'fulfilled').length;
