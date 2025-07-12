@@ -10,6 +10,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { Accounts } from "@/pages/Accounts";
 import { Automation } from "@/pages/Automation";
 import { Reports } from "@/pages/Reports";
+import SetupGuide from "@/pages/SetupGuide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
                 <Route path="/automation" element={<Automation />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/accounts" element={<Accounts />} />
+                <Route path="/setup-guide" element={<SetupGuide />} />
                 <Route path="/settings" element={<div>Settings - Coming Soon</div>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, ExternalLink, AlertCircle } from 'lucide-react';
 import { useAdPlatforms } from '@/hooks/useAdPlatforms';
+import { useNavigate } from 'react-router-dom';
 
 export const AdAccountStatus: React.FC = () => {
   const { accounts, platforms } = useAdPlatforms();
+  const navigate = useNavigate();
 
   return (
     <Card className="border-warning bg-warning/5">
@@ -45,7 +47,12 @@ export const AdAccountStatus: React.FC = () => {
             <Plus className="h-4 w-4" />
             <span>Connect Ad Account</span>
           </Button>
-          <Button variant="outline" size="sm" className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center space-x-2"
+            onClick={() => navigate('/setup-guide')}
+          >
             <ExternalLink className="h-4 w-4" />
             <span>Setup Guide</span>
           </Button>
